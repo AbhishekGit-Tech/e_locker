@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><title>Login with OTP</title></head><body>
+  <h1>Login (with OTP)</h1>
+  {% for m in messages %}<p style="color:red">{{ m }}</p>{% endfor %}
+  <form method="post">{% csrf_token %}
+    {% if step == 'form' %}
+      <input type="hidden" name="step" value="form">
+      <input name="username" placeholder="Username" required><br>
+      <input name="password" type="password" placeholder="Password" required><br>
+      <button type="submit">Send OTP</button>
+    {% else %}
+      <input type="hidden" name="step" value="otp">
+      <p>Check your email for a 4-digit code:</p>
+      <input name="otp_input" placeholder="4-digit OTP" required><br>
+      <button type="submit">Verify & Log In</button>
+    {% endif %}
+  </form>
+</body></html>

@@ -1,0 +1,9 @@
+<!DOCTYPE html><html><head><title>Login</title></head><body>
+  <h1>Login (no OTP)</h1>
+  {% for m in messages %}<p style="color:red">{{ m }}</p>{% endfor %}
+  <form method="post">{% csrf_token %}
+    <input name="username" placeholder="Username" required><br>
+    <input name="password" type="password" placeholder="Password" required><br>
+    <button type="submit">Log In</button>
+  </form>
+</body></html>

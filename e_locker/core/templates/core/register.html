@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head><title>Register</title></head><body>
+  <h1>Register</h1>
+  {% for m in messages %}<p style="color:red">{{ m }}</p>{% endfor %}
+  <form method="post">{% csrf_token %}
+    {% if step == 'form' %}
+      <input type="hidden" name="step" value="form">
+      <input name="username" placeholder="Username" required><br>
+      <input name="email"    type="email"     placeholder="Email"    required><br>
+      <input name="password" type="password"  placeholder="Password" required><br>
+      <input name="confirm_password" type="password" placeholder="Confirm Password" required><br>
+      <button type="submit">Register & Send OTP</button>
+    {% else %}
+      <input type="hidden" name="step" value="otp">
+      <p>An OTP has been sent to your email. Enter it below:</p>
+      <input name="otp_input" placeholder="6-digit OTP" required><br>
+      <button type="submit">Verify & Complete</button>
+    {% endif %}
+  </form>
+  <p><a href="{% url 'landing' %}">Back</a></p>
+</body></html>
