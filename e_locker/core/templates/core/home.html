@@ -1,9 +1,7 @@
 <!DOCTYPE html>
-<html>
-<head><title>e-Locker Home</title></head>
-<body>
-  <h1>Welcome, {{ request.user.username }}!</h1>
-  <p>This is your home page. File upload & encryption features will go here.</p>
+<html><head><title>Home</title></head><body>
+  <h1>Welcome, {{ username }}!</h1>
+  <p>Email: {{ email }}</p>
+  <p>Your personal e-Locker home page is here.</p>
   <p><a href="{% url 'logout' %}">Logout</a></p>
-</body>
-</html>
+</body></html>
