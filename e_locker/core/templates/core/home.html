@@ -1,7 +1,66 @@
 <!DOCTYPE html>
-<html><head><title>Home</title></head><body>
+<html>
+<head>
+  <title>Your e-Locker Home</title>
+</head>
+<body>
   <h1>Welcome, {{ username }}!</h1>
   <p>Email: {{ email }}</p>
-  <p>Your personal e-Locker home page is here.</p>
+
+  <h2>Your Encryption Key</h2>
+  <p>This key encrypts/decrypts your files for this session only.</p>
+
+  <div>
+    <!-- Masked by default -->
+    <input type="password"
+           id="encKey"
+           value="{{ enc_key }}"
+           readonly
+           style="width:400px;">
+    <button id="toggleBtn">Show</button>
+    <button onclick="copyKey()">Copy to Clipboard</button>
+  </div>
+
+  <script>
+    const key = "{{ enc_key }}";
+    const keyField = document.getElementById('encKey');
+    const toggle = document.getElementById('toggleBtn');
+
+    // Toggle between masked/visible
+    toggle.onclick = () => {
+      if (keyField.type === 'password') {
+        keyField.type = 'text';
+        toggle.textContent = 'Hide';
+      } else {
+        keyField.type = 'password';
+        toggle.textContent = 'Show';
+      }
+    };
+
+    // Copy helper
+    function copyKey() {
+      navigator.clipboard.writeText(key)
+        .then(() => alert('Key copied!'))
+        .catch(err => alert('Copy failed: ' + err));
+      // Optionally auto-clear clipboard after 1 minute:
+      setTimeout(() => navigator.clipboard.writeText(''), 60000);
+    }
+  </script>
+<h2>Upload & Encrypt a File</h2>
+<form action="{% url 'upload_file' %}" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <input type="file" name="file" required>
+  <button type="submit">Encrypt & Upload</button>
+</form>
+
+<h2>Your Files</h2>
+<ul>
+  {% for f in request.user.encryptedfile_set.all %}
+    <li>{{ f.name }} ({{ f.upload_ts }})</li>
+  {% empty %}
+    <li>No files yet.</li>
+  {% endfor %}
+</ul>
   <p><a href="{% url 'logout' %}">Logout</a></p>
-</body></html>
+</body>
+</html>

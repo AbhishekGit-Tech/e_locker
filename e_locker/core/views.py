@@ -6,6 +6,10 @@ from django.contrib         import messages
 from django.core.mail       import send_mail
 from django.conf            import settings
 import secrets
+from Crypto.Cipher import AES
+from django.utils import timezone
+from .models import EncryptedFile
+
 
 def landing(request):
     # Prevent a freshly-created superuser from auto-landing:
@@ -99,6 +103,7 @@ def login_simple_view(request):
             user = authenticate(request, username=user_obj.username, password=pwd)
             if user:
                 login(request, user)
+                request.session.pop('enc_key', None)
                 return redirect('home')
             messages.error(request, "Invalid credentials.")
     return render(request, 'core/login_simple.html')
@@ -146,6 +151,7 @@ def login_otp_view(request):
                     request.session.pop('login_otp', None)
                     request.session.pop('login_identifier', None)
                     login(request, user)
+                    request.session.pop('enc_key', None)
                     return redirect('home')
 
             messages.error(request, "Invalid password+OTP combination.")
@@ -156,14 +162,51 @@ def login_otp_view(request):
 
 @login_required
 def home(request):
-    # Each user sees only their page.
+    # 1) Get or generate the per-session encryption key
+    key = request.session.get('enc_key')
+    if not key:
+        # 32 bytes = 256 bits, hex-encoded to 64 chars
+        key = secrets.token_hex(32)
+        request.session['enc_key'] = key
+
+    # 2) Render home.html, including the key in context
     return render(request, 'core/home.html', {
         'username': request.user.username,
         'email':    request.user.email,
-        # add other user-specific data here
+        'enc_key':  key,
     })
 
 
 def logout_view(request):
     logout(request)
     return redirect('landing')
+
+
+@login_required
+def upload_file(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        # 1) Grab the session key and decode hex → bytes
+        key_hex = request.session['enc_key']
+        key = bytes.fromhex(key_hex)
+
+        # 2) Read the uploaded file bytes
+        f = request.FILES['file']
+        data = f.read()
+
+        # 3) AES-GCM encrypt
+        cipher = AES.new(key, AES.MODE_GCM)
+        ciphertext, tag = cipher.encrypt_and_digest(data)
+        nonce = cipher.nonce
+
+        # 4) Save to DB
+        EncryptedFile.objects.create(
+            owner=request.user,
+            name=f.name,
+            nonce=nonce,
+            tag=tag,
+            ciphertext=ciphertext
+        )
+        messages.success(request, f"Encrypted & saved {f.name}")
+        return redirect('home')
+
+    return redirect('home')

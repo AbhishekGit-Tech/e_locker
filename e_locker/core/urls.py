@@ -8,4 +8,6 @@ urlpatterns = [
     path('login/',        views.login_otp_view,   name='login'),
     path('home/',         views.home,             name='home'),
     path('logout/',       views.logout_view,      name='logout'),
+    path('upload/', views.upload_file, name='upload_file'),
+
 ]
