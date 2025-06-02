@@ -56,11 +56,24 @@
 <h2>Your Files</h2>
 <ul>
   {% for f in request.user.encryptedfile_set.all %}
-    <li>{{ f.name }} ({{ f.upload_ts }})</li>
+    <li>
+      {{ f.name }} ({{ f.upload_ts }}) —
+      <a href="{% url 'open_anyway' f.id %}">Open Anyway</a> |
+      <a href="{% url 'decrypt' f.id %}">Decrypt &amp; Open</a> |
+      <a href="{% url 'delete_file' f.id %}"
+         onclick="return confirm('Are you sure you want to delete “{{ f.name }}”?');">
+        Delete
+      </a>
+    </li>
   {% empty %}
-    <li>No files yet.</li>
+    <li>No files uploaded yet.</li>
   {% endfor %}
 </ul>
+{% if messages %}
+  {% for m in messages %}
+    <p style="color: green;">{{ m }}</p>
+  {% endfor %}
+{% endif %}
   <p><a href="{% url 'logout' %}">Logout</a></p>
 </body>
 </html>

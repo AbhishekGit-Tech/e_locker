@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Decrypt "{{ file_name }}"</title>
+</head>
+<body>
+  <h1>Decrypt “{{ file_name }}”</h1>
+
+  {% if plaintext %}
+    <h2>Decrypted Content:</h2>
+    <pre style="white-space: pre-wrap; word-wrap: break-word;">{{ plaintext }}</pre>
+    <p><a href="{% url 'home' %}">Back to Home</a></p>
+  {% else %}
+    {% if error %}
+      <p style="color:red;">{{ error }}</p>
+    {% else %}
+      <p>
+        An OTP has been emailed to <strong>{{ request.user.email }}</strong>.<br>
+        Please enter your <strong>Session Key + 4-digit OTP</strong> below:
+      </p>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <input name="combo" type="password" placeholder="Key + 4-digit OTP" required style="width:300px;"><br><br>
+      <button type="submit">Decrypt &amp; View</button>
+    </form>
+    <p><a href="{% url 'home' %}">Back to Home</a></p>
+  {% endif %}
+</body>
+</html>
