@@ -16,14 +16,17 @@ class EncryptedFile(models.Model):
     def __str__(self):
         return f"{self.name} ({self.owner.username})"
     
+
 class UserProfile(models.Model):
-    user     = models.OneToOneField(User, on_delete=models.CASCADE)
-    last_key = models.CharField(max_length=64, blank=True, default='')
+    user           = models.OneToOneField(User, on_delete=models.CASCADE)
+    last_key       = models.CharField(max_length=64, blank=True, default='')
+    date_of_birth  = models.DateField(null=True, blank=True)
+    picture        = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    bio            = models.TextField(blank=True, default='')
+    last_updated   = models.DateTimeField(auto_now=True)  # NEW: updates on every save
 
     def __str__(self):
         return f"Profile for {self.user.username}"
-    
-
 
 @receiver(post_save, sender=User)
 def create_or_update_profile(sender, instance, created, **kwargs):

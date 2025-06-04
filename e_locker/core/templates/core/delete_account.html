@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Delete Account</title>
+  <style>
+    /* Styling for the confirmation box */
+    .confirm-box {
+      background: #ffecec;
+      border: 1px solid #f5c2c2;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 400px;
+      text-align: center;
+    }
+    .confirm-box button {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .confirm-box button:hover {
+      background: #c9302c;
+    }
+  </style>
+</head>
+<body>
+  {# Include the sidebar here, outside of any <style> block #}
+  {% include 'core/sidebar.html' %}
+
+  <div style="margin-left:220px; padding:20px;">
+    <div class="confirm-box">
+      <h2>Delete Your Account</h2>
+      <p>This will <strong>permanently</strong> delete your account and <strong>all</strong> your files.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit">I Understand—Send OTP to Confirm</button>
+      </form>
+      <p><a href="{% url 'profile' %}">Cancel</a></p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Confirm Account Deletion</title>
+  <style>
+    /* (Reuse the same .confirm-box styling, if you like) */
+    .confirm-box {
+      background: #ffecec;
+      border: 1px solid #f5c2c2;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 400px;
+      text-align: center;
+    }
+    .confirm-box button {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .confirm-box button:hover {
+      background: #c9302c;
+    }
+    .otp-input {
+      width: 300px;
+      padding: 8px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  {% include 'core/sidebar.html' %}
+
+  <div style="margin-left:220px; padding:20px;">
+    <div class="confirm-box">
+      <h2>Confirm Account Deletion</h2>
+
+      {% if messages %}
+        {% for m in messages %}
+          <p style="color: red;">{{ m }}</p>
+        {% endfor %}
+      {% else %}
+        <p>An OTP has been emailed to {{ request.user.email }}.</p>
+        <p>Enter your <strong>Session Key + 4-digit OTP</strong> below to confirm deletion:</p>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <input 
+           name="otp_input" 
+           type="password" 
+           class="otp-input"
+           placeholder="Key + 4-digit OTP" 
+           required 
+         >
+        <br>
+        <button type="submit">Verify & Delete My Account</button>
+      </form>
+
+      <p><a href="{% url 'profile' %}">Back to Profile</a></p>
+    </div>
+  </div>
+</body>
+</html>

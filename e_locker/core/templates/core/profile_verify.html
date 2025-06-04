@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Confirm Profile Change</title>
+</head>
+<body>
+  <h1>Confirm Profile Change</h1>
+
+  {% if messages %}
+    {% for m in messages %}
+      <p style="color:red;">{{ m }}</p>
+    {% endfor %}
+  {% else %}
+    <p>An OTP has been emailed to {{ request.user.email }}.</p>
+    <p>Enter your <strong>Session Key + 4-digit OTP</strong> below to confirm:</p>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <input name="otp_input" type="password" placeholder="Key + 4-digit OTP" required style="width:300px;"><br><br>
+    <button type="submit">Verify & Apply</button>
+  </form>
+
+  <p><a href="{% url 'profile' %}">Back to Profile</a></p>
+</body>
+</html>

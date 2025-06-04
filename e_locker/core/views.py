@@ -417,3 +417,240 @@ def delete_file(request, file_id):
     ef.delete()
     messages.success(request, f"Deleted file “{ef.name}”.")
     return redirect('home')
+
+
+
+@login_required
+def profile_view(request):
+    """
+    Four‐tab profile page:
+      1) View Profile (shows current info)
+      2) Update Your Profile (DOB, picture, bio)
+      3) Change Username  (OTP‐protected)
+      4) Change Password (OTP‐protected)
+    """
+    user = request.user
+    profile = user.userprofile
+
+    if request.method == 'POST':
+        # ——————————————————————————————————————————————
+        # 1) Handle “Update Your Profile” form (no OTP)
+        # Triggered only if <button name="save_profile"> was clicked
+        if 'save_profile' in request.POST:
+            dob = request.POST.get('date_of_birth')
+            bio = request.POST.get('bio', '').strip()
+            profile.date_of_birth = dob if dob else None
+            profile.bio = bio
+
+            pic = request.FILES.get('picture')
+            if pic:
+                profile.picture = pic
+
+            profile.save()
+            messages.success(request, "Profile updated successfully.")
+            return redirect('profile')
+
+        # ——————————————————————————————————————————————
+        # 2) Handle “Change Username” form (OTP step 1)
+        # Triggered only if <button name="change_username"> was clicked
+        elif 'change_username' in request.POST:
+            new_username = request.POST.get('new_username', '').strip()
+
+            if not new_username:
+                messages.error(request, "Username cannot be empty.")
+                return redirect('profile')
+
+            # Make sure it’s not already taken (excluding the current user)
+            if User.objects.filter(username=new_username).exclude(pk=user.pk).exists():
+                messages.error(request, "That username is already taken.")
+                return redirect('profile')
+
+            # Store pending_username in session
+            request.session['pending_username'] = new_username
+
+            # Generate & store OTP
+            otp = f"{secrets.randbelow(9000) + 1000:04d}"
+            request.session['profile_otp'] = otp
+
+            # Email OTP
+            send_mail(
+                subject="e-Locker Username Change OTP",
+                message=f"Use this code to confirm your new username: {otp}",
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            return redirect('profile_verify')
+
+        # ——————————————————————————————————————————————
+        # 3) Handle “Change Password” form (OTP step 1)
+        # Triggered only if <button name="change_password"> was clicked
+        elif 'change_password' in request.POST:
+            new_password  = request.POST.get('new_password', '').strip()
+            confirm_pass  = request.POST.get('confirm_password', '').strip()
+
+            if not new_password or not confirm_pass:
+                messages.error(request, "Please fill in both password fields.")
+                return redirect('profile')
+
+            if new_password != confirm_pass:
+                messages.error(request, "Passwords do not match.")
+                return redirect('profile')
+
+            # Store pending_password in session
+            request.session['pending_password'] = new_password
+
+            # Generate & store OTP
+            otp = f"{secrets.randbelow(9000) + 1000:04d}"
+            request.session['profile_otp'] = otp
+
+            # Email OTP
+            send_mail(
+                subject="e-Locker Password Change OTP",
+                message=f"Use this code to confirm your new password: {otp}",
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            return redirect('profile_verify')
+
+    # GET: render profile page with all tabs
+    return render(request, 'core/profile.html', {
+        'username':      user.username,
+        'email':         user.email,
+        'date_of_birth': profile.date_of_birth,
+        'bio':           profile.bio,
+        'picture_url':   profile.picture.url if profile.picture else None,
+    })
+
+
+@login_required
+def profile_verify(request):
+    """
+    Second step of OTP‐protected flows:
+     - If pending_username in session → finalize username change
+     - If pending_password in session → finalize password change
+    """
+    user = request.user
+
+    if request.method == 'POST':
+        entered = request.POST.get('otp_input', '').strip()
+        real_otp = request.session.get('profile_otp')
+
+        if entered == real_otp:
+            # Both OTP and session are valid—apply whichever change is pending
+            pending_username = request.session.pop('pending_username', None)
+            pending_password = request.session.pop('pending_password', None)
+            request.session.pop('profile_otp', None)
+
+            if pending_username:
+                user.username = pending_username
+
+            if pending_password:
+                user.set_password(pending_password)
+
+            user.save()
+            messages.success(request, "Changes applied. Please log in again.")
+            logout(request)
+            return redirect('login_simple')
+
+        # OTP did not match
+        messages.error(request, "Invalid OTP, please try again.")
+        return render(request, 'core/profile_verify.html')
+
+    # GET: just show the OTP entry form
+    return render(request, 'core/profile_verify.html')
+
+
+@login_required
+def remove_picture(request):
+    """
+    DELETE the current user’s profile picture (no OTP). Redirect back to profile.
+    """
+    if request.method == 'POST':
+        profile = request.user.userprofile
+        if profile.picture:
+            # Delete the file from disk if it exists
+            pic_path = profile.picture.path
+            profile.picture.delete(save=False)
+            # Optionally remove from media folder:
+            if os.path.isfile(pic_path):
+                os.remove(pic_path)
+
+            messages.success(request, "Profile picture removed.")
+        else:
+            messages.error(request, "No profile picture to remove.")
+    return redirect('profile')
+
+
+@login_required
+def delete_account(request):
+    """
+    Step A: Show a confirmation form that says “Are you sure?” and,
+    on POST, generate+email OTP and redirect to confirm_delete_account.
+    """
+    user = request.user
+
+    if request.method == 'POST':
+        # Generate a 4-digit OTP and store in session
+        otp = f"{secrets.randbelow(9000) + 1000:04d}"
+        request.session['delete_otp'] = otp
+
+        # Email to the user
+        send_mail(
+            subject="e-Locker Account Deletion OTP",
+            message=(
+                f"Use this code to permanently delete your account "
+                f"and all data: {otp}"
+            ),
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+        return redirect('confirm_delete_account')
+
+    # GET: Render a simple “Are you sure?” page
+    return render(request, 'core/delete_account.html')
+
+
+@login_required
+def confirm_delete_account(request):
+    """
+    Step B: Verify OTP and then delete User, UserProfile, and all EncryptedFile.
+    """
+    if request.method == 'POST':
+        entered = request.POST.get('otp_input','').strip()
+        real_otp = request.session.get('delete_otp')
+
+        if entered == real_otp:
+            # Clean session
+            request.session.pop('delete_otp', None)
+
+            user = request.user
+
+            # Delete all EncryptedFile objects for this user
+            EncryptedFile.objects.filter(owner=user).delete()
+            # Delete UserProfile (optional, cascade would handle it)
+            try:
+                profile = user.userprofile
+                if profile.picture:
+                    pic_path = profile.picture.path
+                    profile.picture.delete(save=False)
+                    if os.path.isfile(pic_path):
+                        os.remove(pic_path)
+                profile.delete()
+            except UserProfile.DoesNotExist:
+                pass
+
+            # Finally, delete the User itself
+            user.delete()
+
+            # You might want to redirect to landing or show a “goodbye” page
+            messages.success(request, "Your account and all data have been deleted.")
+            return redirect('landing')
+
+        messages.error(request, "Invalid OTP, please try again.")
+        return render(request, 'core/confirm_delete_account.html')
+
+    # GET: show OTP entry form
+    return render(request, 'core/confirm_delete_account.html')

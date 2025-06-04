@@ -4,8 +4,19 @@
   <title>Your e-Locker Home</title>
 </head>
 <body>
+
+    {% include 'core/sidebar.html' %}
+
+  <div style="margin-left:220px;"> <!-- Leave space for sidebar -->
+
   <h1>Welcome, {{ username }}!</h1>
   <p>Email: {{ email }}</p>
+  <p>
+  <a href="{% url 'profile' %}">
+    <button type="button">My Profile</button>
+  </a>
+</p>
+
 
   <h2>Your Encryption Key</h2>
   <p>This key encrypts/decrypts your files for this session only.</p>
@@ -75,5 +86,6 @@
   {% endfor %}
 {% endif %}
   <p><a href="{% url 'logout' %}">Logout</a></p>
+</div>
 </body>
 </html>
