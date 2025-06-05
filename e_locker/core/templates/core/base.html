@@ -1,0 +1,114 @@
+{# core/templates/core/base.html #}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}e-Locker{% endblock %}</title>
+
+  <style>
+    /* -------------------------------------- */
+    /* 1) Style for the popover “menu box”    */
+    /* -------------------------------------- */
+    #menuBox {
+      position: absolute;
+      top: 40px;       /* just below the menu button */
+      left: 10px;      /* align with left margin of button */
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      display: none;   /* hidden by default */
+      z-index: 2000;   /* sits above page content */
+      padding: 8px 0;
+      min-width: 140px;
+    }
+    /* Each link in the popover */
+    #menuBox a {
+      display: block;
+      padding: 8px 12px;
+      text-decoration: none;
+      color: #333;
+      font-size: 14px;
+    }
+    #menuBox a:hover {
+      background: #f0f0f0;
+    }
+
+    /* -------------------------------------- */
+    /* 2) Style for the menu button “☰”       */
+    /* -------------------------------------- */
+    #menuBtn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 2100;   /* above #menuBox */
+    }
+
+    /* -------------------------------------- */
+    /* 3) Existing “main-content” wrapper      */
+    /*    We no longer shift content by 200px  */
+    /*    because there’s no full sidebar.     */
+    /*    Instead, all pages will be full-width. */
+    /* -------------------------------------- */
+    #main-content {
+      margin: 0;       /* no left margin needed */
+      padding: 20px;   /* optional padding around content */
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {# ---------------------------------------- #}
+  {# 1) Menu button that toggles the box     #}
+  {# ---------------------------------------- #}
+  <button id="menuBtn" title="Menu">☰</button>
+
+  {# --------------------------------------------------------- #}
+  {# 2) The hidden popover “menu box” containing nav links    #}
+  {# --------------------------------------------------------- #}
+  <div id="menuBox">
+    <a href="{% url 'home' %}">🏠 Home</a>
+    <a href="{% url 'profile' %}">👤 Profile</a>
+    <a href="{% url 'delete_account' %}">🗑 Delete Account</a>
+    <a href="{% url 'logout' %}">🚪 Logout</a>
+  </div>
+
+  {# ---------------------------------------- #}
+  {# 3) Main page content                       #}
+  {# ---------------------------------------- #}
+  <div id="main-content">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script>
+    // ---------------------------------------------------------
+    // JS to toggle the menuBox when menuBtn is clicked,
+    // and close it when clicking outside the box or button.
+    // ---------------------------------------------------------
+    document.addEventListener("DOMContentLoaded", function() {
+      const menuBtn = document.getElementById("menuBtn");
+      const menuBox = document.getElementById("menuBox");
+
+      // Toggle visibility of #menuBox when #menuBtn is clicked
+      menuBtn.addEventListener("click", function(event) {
+        event.stopPropagation();                 // Prevent click from bubbling
+        menuBox.style.display = 
+          (menuBox.style.display === "block") ? "none" : "block";
+      });
+
+      // If the user clicks anywhere else on the document, hide #menuBox
+      document.addEventListener("click", function(event) {
+        // If click is outside #menuBox and not on #menuBtn, close
+        if (!menuBox.contains(event.target) && event.target !== menuBtn) {
+          menuBox.style.display = "none";
+        }
+      });
+    });
+  </script>
+</body>
+</html>

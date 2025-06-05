@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>My Profile</title>
-  <style>
-    /* Sidebar is included via core/sidebar.html */
+{% extends "core/base.html" %}
 
+{% block title %}My Profile | e-Locker{% endblock %}
+
+{% block extra_head %}
+  <style>
     /* Tab bar styling */
     .tab-bar {
       margin-bottom: 20px;
@@ -21,7 +20,7 @@
       font-weight: bold;
     }
 
-    /* Tab‐content styling */
+    /* Tab-content styling */
     .tab-content {
       display: none;
       padding: 10px;
@@ -68,7 +67,7 @@
       margin-top: 10px;
       position: relative;
     }
-    /* “×” remove‐picture button overlaid on the top right of the image */
+    /* “×” remove-picture button */
     #removePicBtn {
       position: absolute;
       top: -8px;
@@ -84,136 +83,122 @@
       cursor: pointer;
     }
   </style>
-</head>
-<body>
-  {% include 'core/sidebar.html' %}
+{% endblock %}
 
-  <div style="margin-left:220px;"> <!-- Leave space for sidebar -->
-    <h1>My Profile</h1>
+{% block content %}
+  <h1>My Profile</h1>
 
-    {% if messages %}
-      {% for m in messages %}
-        <p style="color: green;">{{ m }}</p>
-      {% endfor %}
+  {% if messages %}
+    {% for m in messages %}
+      <p style="color: green;">{{ m }}</p>
+    {% endfor %}
+  {% endif %}
+
+  <div class="tab-bar">
+    <button id="tabProfile" class="active" onclick="showTab('profileTab')">Profile</button>
+    <button id="tabAccount" onclick="showTab('accountTab')">Account Settings</button>
+  </div>
+
+  <div id="profileTab" class="tab-content active">
+    <p><strong>Username:</strong> {{ username }}</p>
+    <p><strong>Email:</strong> {{ email }}</p>
+    <p><strong>Last Login:</strong> {{ request.user.last_login }}</p>
+    <p><strong>Profile Last Updated:</strong> {{ request.user.userprofile.last_updated }}</p>
+    <p><strong>Date of Birth:</strong> {{ date_of_birth|default:"Not set" }}</p>
+    <p><strong>Bio:</strong> {{ bio|default:"No bio provided" }}</p>
+
+    {% if picture_url %}
+      <div style="position: relative; display: inline-block;">
+        <img id="profilePic" src="{{ picture_url }}" alt="Profile Picture">
+        <form method="post" action="{% url 'remove_picture' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" id="removePicBtn" title="Remove Picture">&times;</button>
+        </form>
+      </div>
+    {% else %}
+      <p><strong>Picture:</strong> Not uploaded</p>
     {% endif %}
 
-    <!-- Two main tabs -->
-    <div class="tab-bar">
-      <button id="tabProfile" class="active" onclick="showTab('profileTab')">Profile</button>
-      <button id="tabAccount" onclick="showTab('accountTab')">Account Settings</button>
-    </div>
+    <hr>
 
-    <!-- 1) Profile Tab (view + update) -->
-    <div id="profileTab" class="tab-content active">
-      <!-- Display existing info -->
-      <p><strong>Username:</strong> {{ username }}</p>
-      <p><strong>Email:</strong> {{ email }}</p>
-      <p><strong>Last Login:</strong> {{ request.user.last_login }}</p>
-      <p><strong>Profile Last Updated:</strong> {{ request.user.userprofile.last_updated }}</p>
-      <p><strong>Date of Birth:</strong> {{ date_of_birth|default:"Not set" }}</p>
-      <p><strong>Bio:</strong> {{ bio|default:"No bio provided" }}</p>
-      {% if picture_url %}
-        <div style="position: relative; display: inline-block;">
-          <img id="profilePic" src="{{ picture_url }}" alt="Profile Picture">
-          <!-- “×” button to remove picture -->
-          <form method="post" action="{% url 'remove_picture' %}" style="display:inline;">
+    <h3>Update Your Profile</h3>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="save_profile" value="1">
+      <p>
+        <label>Date of Birth:
+          <input type="date" name="date_of_birth" value="{{ date_of_birth }}">
+        </label>
+      </p>
+      <p>
+        <label>Bio:<br>
+          <textarea name="bio" rows="3" cols="40">{{ bio }}</textarea>
+        </label>
+      </p>
+      <p>
+        <label>Upload New Picture:
+          <input type="file" name="picture" accept="image/*">
+        </label>
+      </p>
+      <button type="submit">Save Profile</button>
+    </form>
+  </div>
+
+  <div id="accountTab" class="tab-content">
+    <div class="accordion">
+      <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('usernamePanel')">
+          Change Username
+        </div>
+        <div id="usernamePanel" class="accordion-content">
+          <form method="post">
             {% csrf_token %}
-            <button type="submit" id="removePicBtn" title="Remove Picture">&times;</button>
+            <input type="hidden" name="change_username" value="1">
+            <p>
+              <label>New Username:
+                <input type="text" name="new_username" value="{{ username }}" required>
+              </label>
+            </p>
+            <button type="submit">Request OTP &amp; Change Username</button>
           </form>
         </div>
-      {% else %}
-        <p><strong>Picture:</strong> Not uploaded</p>
-      {% endif %}
+      </div>
 
-      <hr>
-
-      <!-- Update your profile (DOB, bio, picture) -->
-      <h3>Update Your Profile</h3>
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="hidden" name="save_profile" value="1">
-        <p>
-          <label>Date of Birth:
-            <input type="date" name="date_of_birth" value="{{ date_of_birth }}">
-          </label>
-        </p>
-        <p>
-          <label>Bio:<br>
-            <textarea name="bio" rows="3" cols="40">{{ bio }}</textarea>
-          </label>
-        </p>
-        <p>
-          <label>Upload New Picture:
-            <input type="file" name="picture" accept="image/*">
-          </label>
-        </p>
-        <button type="submit">Save Profile</button>
-      </form>
-    </div>
-
-    <!-- 2) Account Settings Tab -->
-    <div id="accountTab" class="tab-content">
-      <div class="accordion">
-        <!-- Change Username Section -->
-        <div class="accordion-section">
-          <div class="accordion-header" onclick="toggleAccordion('usernamePanel')">
-            Change Username
-          </div>
-          <div id="usernamePanel" class="accordion-content">
-            <form method="post">
-              {% csrf_token %}
-              <input type="hidden" name="change_username" value="1">
-              <p>
-                <label>New Username:
-                  <input type="text" name="new_username" value="{{ username }}" required>
-                </label>
-              </p>
-              <button type="submit">Request OTP & Change Username</button>
-            </form>
-          </div>
+      <div class="accordion-section">
+        <div class="accordion-header" onclick="toggleAccordion('passwordPanel')">
+          Change Password
         </div>
-
-        <!-- Change Password Section -->
-        <div class="accordion-section">
-          <div class="accordion-header" onclick="toggleAccordion('passwordPanel')">
-            Change Password
-          </div>
-          <div id="passwordPanel" class="accordion-content">
-            <form method="post">
-              {% csrf_token %}
-              <input type="hidden" name="change_password" value="1">
-              <p>
-                <label>New Password:
-                  <input type="password" name="new_password" required>
-                </label>
-              </p>
-              <p>
-                <label>Confirm New Password:
-                  <input type="password" name="confirm_password" required>
-                </label>
-              </p>
-              <button type="submit">Request OTP & Change Password</button>
-            </form>
-          </div>
+        <div id="passwordPanel" class="accordion-content">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="change_password" value="1">
+            <p>
+              <label>New Password:
+                <input type="password" name="new_password" required>
+              </label>
+            </p>
+            <p>
+              <label>Confirm New Password:
+                <input type="password" name="confirm_password" required>
+              </label>
+            </p>
+            <button type="submit">Request OTP &amp; Change Password</button>
+          </form>
         </div>
       </div>
     </div>
-
-    <p><a href="{% url 'home' %}">Back to Home</a></p>
   </div>
 
+  <p><a href="{% url 'home' %}">Back to Home</a></p>
+
   <script>
-    // Switch between Profile and Account Settings tabs
     function showTab(tabId) {
-      // Hide both tab contents
       document.querySelectorAll('.tab-content').forEach(div => {
         div.classList.remove('active');
       });
-      // Remove “active” from both buttons
       document.querySelectorAll('.tab-bar button').forEach(btn => {
         btn.classList.remove('active');
       });
-      // Show the clicked tab and mark its button active
       document.getElementById(tabId).classList.add('active');
       if (tabId === 'profileTab') {
         document.getElementById('tabProfile').classList.add('active');
@@ -221,20 +206,15 @@
         document.getElementById('tabAccount').classList.add('active');
       }
     }
-
-    // Toggle an accordion panel inside Account Settings
     function toggleAccordion(panelId) {
       const panel = document.getElementById(panelId);
       const isActive = panel.classList.contains('active');
-      // Close all panels
       document.querySelectorAll('.accordion-content').forEach(div => {
         div.classList.remove('active');
       });
-      // If it wasn’t active before, open it
       if (!isActive) {
         panel.classList.add('active');
       }
     }
   </script>
-</body>
-</html>
+{% endblock %}

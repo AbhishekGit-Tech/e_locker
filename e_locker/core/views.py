@@ -586,51 +586,46 @@ def remove_picture(request):
 @login_required
 def delete_account(request):
     """
-    Step A: Show a confirmation form that says “Are you sure?” and,
-    on POST, generate+email OTP and redirect to confirm_delete_account.
+    Step A: Show a confirmation form and, on POST, generate and email OTP.
     """
     user = request.user
 
     if request.method == 'POST':
-        # Generate a 4-digit OTP and store in session
+        # Generate a 4-digit OTP and store it in session
         otp = f"{secrets.randbelow(9000) + 1000:04d}"
         request.session['delete_otp'] = otp
 
-        # Email to the user
+        # Send the OTP to the user's email
         send_mail(
             subject="e-Locker Account Deletion OTP",
-            message=(
-                f"Use this code to permanently delete your account "
-                f"and all data: {otp}"
-            ),
+            message=f"Use this OTP to delete your e-Locker account: {otp}",
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[user.email],
             fail_silently=False,
         )
         return redirect('confirm_delete_account')
 
-    # GET: Render a simple “Are you sure?” page
     return render(request, 'core/delete_account.html')
-
 
 @login_required
 def confirm_delete_account(request):
     """
-    Step B: Verify OTP and then delete User, UserProfile, and all EncryptedFile.
+    Step B: Verify OTP and delete all user data.
     """
     if request.method == 'POST':
-        entered = request.POST.get('otp_input','').strip()
+        entered_otp = request.POST.get('otp_input', '').strip()
         real_otp = request.session.get('delete_otp')
 
-        if entered == real_otp:
-            # Clean session
+        if entered_otp == real_otp:
+            # Remove OTP from session
             request.session.pop('delete_otp', None)
 
             user = request.user
 
-            # Delete all EncryptedFile objects for this user
+            # Delete user's encrypted files
             EncryptedFile.objects.filter(owner=user).delete()
-            # Delete UserProfile (optional, cascade would handle it)
+
+            # Delete profile and profile picture if exists
             try:
                 profile = user.userprofile
                 if profile.picture:
@@ -642,15 +637,12 @@ def confirm_delete_account(request):
             except UserProfile.DoesNotExist:
                 pass
 
-            # Finally, delete the User itself
+            # Delete user account
             user.delete()
 
-            # You might want to redirect to landing or show a “goodbye” page
             messages.success(request, "Your account and all data have been deleted.")
             return redirect('landing')
 
-        messages.error(request, "Invalid OTP, please try again.")
-        return render(request, 'core/confirm_delete_account.html')
-
-    # GET: show OTP entry form
+        messages.error(request, "Invalid OTP. Please try again.")
+    
     return render(request, 'core/confirm_delete_account.html')

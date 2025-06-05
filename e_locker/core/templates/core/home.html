@@ -1,91 +1,86 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Your e-Locker Home</title>
-</head>
-<body>
+{% extends "core/base.html" %}
 
-    {% include 'core/sidebar.html' %}
+{% block title %}Your e-Locker Home{% endblock %}
 
-  <div style="margin-left:220px;"> <!-- Leave space for sidebar -->
+{% block extra_head %}
+  <style>
+    /* (Optional) Page-specific CSS */
+    h1 { color: #2a7ae2; }
+  </style>
+{% endblock %}
 
+{% block content %}
   <h1>Welcome, {{ username }}!</h1>
   <p>Email: {{ email }}</p>
   <p>
-  <a href="{% url 'profile' %}">
-    <button type="button">My Profile</button>
-  </a>
-</p>
-
+    <a href="{% url 'profile' %}">
+      <button type="button">My Profile</button>
+    </a>
+  </p>
 
   <h2>Your Encryption Key</h2>
   <p>This key encrypts/decrypts your files for this session only.</p>
-
   <div>
-    <!-- Masked by default -->
-    <input type="password"
-           id="encKey"
-           value="{{ enc_key }}"
-           readonly
-           style="width:400px;">
+    <input
+      type="password"
+      id="encKey"
+      value="{{ enc_key }}"
+      readonly
+      style="width:400px;"
+    >
     <button id="toggleBtn">Show</button>
     <button onclick="copyKey()">Copy to Clipboard</button>
   </div>
-
   <script>
     const key = "{{ enc_key }}";
-    const keyField = document.getElementById('encKey');
-    const toggle = document.getElementById('toggleBtn');
-
-    // Toggle between masked/visible
+    const keyField = document.getElementById("encKey");
+    const toggle   = document.getElementById("toggleBtn");
     toggle.onclick = () => {
-      if (keyField.type === 'password') {
-        keyField.type = 'text';
-        toggle.textContent = 'Hide';
+      if (keyField.type === "password") {
+        keyField.type = "text";
+        toggle.textContent = "Hide";
       } else {
-        keyField.type = 'password';
-        toggle.textContent = 'Show';
+        keyField.type = "password";
+        toggle.textContent = "Show";
       }
     };
-
-    // Copy helper
     function copyKey() {
       navigator.clipboard.writeText(key)
-        .then(() => alert('Key copied!'))
-        .catch(err => alert('Copy failed: ' + err));
-      // Optionally auto-clear clipboard after 1 minute:
-      setTimeout(() => navigator.clipboard.writeText(''), 60000);
+        .then(() => alert("Key copied!"))
+        .catch(err => alert("Copy failed: " + err));
+      setTimeout(() => navigator.clipboard.writeText(""), 60000);
     }
   </script>
-<h2>Upload & Encrypt a File</h2>
-<form action="{% url 'upload_file' %}" method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  <input type="file" name="file" required>
-  <button type="submit">Encrypt & Upload</button>
-</form>
 
-<h2>Your Files</h2>
-<ul>
-  {% for f in request.user.encryptedfile_set.all %}
-    <li>
-      {{ f.name }} ({{ f.upload_ts }}) —
-      <a href="{% url 'open_anyway' f.id %}">Open Anyway</a> |
-      <a href="{% url 'decrypt' f.id %}">Decrypt &amp; Open</a> |
-      <a href="{% url 'delete_file' f.id %}"
-         onclick="return confirm('Are you sure you want to delete “{{ f.name }}”?');">
-        Delete
-      </a>
-    </li>
-  {% empty %}
-    <li>No files uploaded yet.</li>
-  {% endfor %}
-</ul>
-{% if messages %}
-  {% for m in messages %}
-    <p style="color: green;">{{ m }}</p>
-  {% endfor %}
-{% endif %}
+  <h2>Upload &amp; Encrypt a File</h2>
+  <form action="{% url 'upload_file' %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="file" required>
+    <button type="submit">Encrypt &amp; Upload</button>
+  </form>
+
+  <h2>Your Files</h2>
+  <ul>
+    {% for f in request.user.encryptedfile_set.all %}
+      <li>
+        {{ f.name }} ({{ f.upload_ts }}) —
+        <a href="{% url 'open_anyway' f.id %}">Open Anyway</a> |
+        <a href="{% url 'decrypt' f.id %}">Decrypt &amp; Open</a> |
+        <a href="{% url 'delete_file' f.id %}"
+           onclick="return confirm('Delete “{{ f.name }}”?');">
+          Delete
+        </a>
+      </li>
+    {% empty %}
+      <li>No files uploaded yet.</li>
+    {% endfor %}
+  </ul>
+
+  {% if messages %}
+    {% for m in messages %}
+      <p style="color: green;">{{ m }}</p>
+    {% endfor %}
+  {% endif %}
+
   <p><a href="{% url 'logout' %}">Logout</a></p>
-</div>
-</body>
-</html>
+{% endblock %}

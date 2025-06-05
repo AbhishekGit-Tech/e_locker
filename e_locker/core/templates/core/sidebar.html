@@ -1,26 +1,46 @@
+{# core/templates/core/sidebar.html #}
 <style>
-  /* Basic sidebar styling */
-  .sidebar {
+  /* Sidebar is fixed at left, 200px wide */
+  #sidebar {
     width: 200px;
-    float: left;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    background: #f9f9f9;
     border-right: 1px solid #ccc;
-    padding-right: 10px;
-    margin-right: 10px;
+    padding: 20px 10px;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    transform: translateX(0);  /* visible by default */
+    z-index: 1000;             /* sits below open-sidebar button */
   }
-  .sidebar a {
+  #sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+  .sidebar-link {
     display: block;
     text-decoration: none;
     color: #333;
     padding: 8px 0;
   }
-  .sidebar a:hover {
+  .sidebar-link:hover {
     background: #eee;
+  }
+  /* “×” in the corner to close the sidebar */
+  #closeSidebarBtn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
   }
 </style>
 
-<div class="sidebar">
-  <a href="{% url 'home' %}">🏠 Home</a>
-  <a href="{% url 'profile' %}">👤 Profile</a>
-  <a href="{% url 'delete_account' %}">🗑 Delete Account</a>
-  <a href="{% url 'logout' %}">🚪 Logout</a>
+<div id="sidebar">
+  <button id="closeSidebarBtn" title="Close Sidebar">&times;</button>
+  <a href="{% url 'home' %}" class="sidebar-link">🏠 Home</a>
+  <a href="{% url 'profile' %}" class="sidebar-link">👤 Profile</a>
+  <a href="{% url 'delete_account' %}" class="sidebar-link">🗑 Delete Account</a>
+  <a href="{% url 'logout' %}" class="sidebar-link">🚪 Logout</a>
 </div>
